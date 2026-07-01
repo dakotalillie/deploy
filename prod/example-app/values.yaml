@@ -1,4 +1,4 @@
-image: 996879208861.dkr.ecr.us-west-1.amazonaws.com/example-app:2d3b012aba8b5e62c3059557bf18c638c0308843
+image: 996879208861.dkr.ecr.us-west-1.amazonaws.com/example-app:8a46c78c48c699a3814c38211a818c0f37c9b2ab
 services:
   example-app:
     port: 8000
