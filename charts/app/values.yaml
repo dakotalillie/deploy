@@ -16,6 +16,25 @@ image: ""
 #   serviceType:  Kubernetes Service type (default ClusterIP)
 #   env:          map of environment variables (optional)
 #   resources:    pod resource requests/limits (optional)
+#   preDeploy:    run a one-off command before each deploy (optional; see below)
+#
+# preDeploy runs a task to completion as an Argo CD PreSync hook: it executes and
+# must succeed before the new manifests are applied, and a failure aborts the sync
+# so nothing new is rolled out. It runs on every sync that changes the app.
+# Successful runs are cleaned up automatically; failed runs are kept so you can
+# still inspect their logs while debugging.
+#   command:      container command to run, as a list (required)
+#   args:         arguments for the command, as a list (optional)
+#   image:        image to run the command in (defaults to the service's image)
+#   env:          extra environment variables; merged over the service's `env`,
+#                 taking precedence on conflicts (optional)
+#   resources:    resource requests/limits for the hook (defaults to the
+#                 service's `resources`)
+#   backoffLimit: retries before the hook is considered failed (default 0)
+#   ttlSecondsAfterFinished:
+#                 seconds Kubernetes keeps a finished hook Job before deleting it;
+#                 bounds how long retained failures pile up (default 259200, i.e.
+#                 3 days). Set to null to keep failed Jobs indefinitely.
 services: {}
   # web:
   #   image: nginx:1.27
@@ -28,3 +47,6 @@ services: {}
   #   serviceType: ClusterIP
   #   env:
   #     LOG_LEVEL: info
+  #   preDeploy:
+  #     # reuses the service image and env by default
+  #     command: ["/bin/sh", "-c", "echo running pre-deploy task"]
