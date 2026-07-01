@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: example-app-gitops
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:dakotalillie/deploy.git
+    targetRevision: main
+    path: charts/app
+    helm:
+      valueFiles:
+        - ../../prod/example-app/values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: example-app-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

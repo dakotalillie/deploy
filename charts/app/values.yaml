@@ -1,0 +1,30 @@
+# Default values for the app chart.
+
+# Default container image used by every service that does not set its own
+# `image`, e.g. "nginx:1.27". Leave empty to require each service to specify one.
+image: ""
+
+# A map of services to deploy. Each entry creates one Deployment and one Service.
+# The map key is used as the service name.
+#
+# Per-service options:
+#   image:        container image, e.g. "nginx:1.27" (falls back to the top-level
+#                 `image` above; required if that default is not set)
+#   replicaCount: number of pod replicas (default 1)
+#   port:         container port the app listens on (default 80)
+#   servicePort:  port the Service exposes (defaults to `port`)
+#   serviceType:  Kubernetes Service type (default ClusterIP)
+#   env:          map of environment variables (optional)
+#   resources:    pod resource requests/limits (optional)
+services: {}
+  # web:
+  #   image: nginx:1.27
+  #   replicaCount: 2
+  #   port: 80
+  # api:
+  #   # no image here: inherits the top-level `image` default
+  #   replicaCount: 1
+  #   port: 8080
+  #   serviceType: ClusterIP
+  #   env:
+  #     LOG_LEVEL: info

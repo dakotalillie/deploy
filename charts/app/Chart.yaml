@@ -1,0 +1,5 @@
+apiVersion: v2
+name: app
+description: A chart for deploying one or more application services (Deployment + Service)
+type: application
+version: 0.1.0

@@ -1,0 +1,5 @@
+image: 996879208861.dkr.ecr.us-west-1.amazonaws.com/example-app:7a418ef2a918bf2b50d4e474f80dd456d4631895
+services:
+  example-app:
+    port: 8000
+    replicaCount: 1

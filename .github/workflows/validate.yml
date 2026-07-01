@@ -1,0 +1,13 @@
+name: validate
+
+on:
+  pull_request:
+
+jobs:
+  values-paths:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check Application value paths
+        run: ./scripts/check-values-paths.sh
