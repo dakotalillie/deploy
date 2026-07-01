@@ -3,3 +3,5 @@ services:
   example-app:
     port: 8000
     replicaCount: 1
+    preDeploy:
+      command: ["/bin/bash", "-c", "for i in $(seq 1 10); do echo $i; done"]
