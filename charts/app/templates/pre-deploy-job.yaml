@@ -14,9 +14,11 @@
 {{- $jobPrefix := printf "%s-pre-deploy" $fullname | trunc 57 | trimSuffix "-" }}
 {{- /* Reuse the service's env by default; preDeploy.env takes precedence on conflicts. */}}
 {{- $env := merge (deepCopy (.env | default dict)) ($svc.env | default dict) }}
-{{- /* Bound how long a finished (esp. failed, since those are retained) Job lingers
-       before Kubernetes garbage-collects it. Defaults to 3 days; an explicit value is
-       honored (including 0), and an explicit null keeps failed Jobs indefinitely. */}}
+{{- /* Bound how long a finished Job lingers before Kubernetes garbage-collects it.
+       This is the only cleanup mechanism now that Argo CD no longer deletes on
+       success, so it applies to both succeeded and failed Jobs. Defaults to 3 days;
+       an explicit value is honored (including 0), and an explicit null keeps finished
+       Jobs indefinitely. */}}
 {{- $ttl := 259200 }}
 {{- if hasKey . "ttlSecondsAfterFinished" }}
 {{- $ttl = .ttlSecondsAfterFinished }}
@@ -33,10 +35,12 @@ metadata:
     # before the rest of the manifests are applied. If it fails, the sync is
     # aborted and nothing new is rolled out.
     argocd.argoproj.io/hook: PreSync
-    # Clean up the Job once it succeeds, but keep failed Jobs so their logs stay
-    # available for debugging. Paired with generateName above, each run gets a
-    # fresh name, so a retained failure never blocks the next attempt.
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    # Don't delete the Job when it finishes (neither on success nor failure) so
+    # its logs stay available for debugging. Cleanup is left entirely to
+    # ttlSecondsAfterFinished below. BeforeHookCreation keeps Argo CD from
+    # deleting it on completion; paired with generateName above, each run gets a
+    # fresh name, so a retained Job never blocks the next attempt.
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   backoffLimit: {{ .backoffLimit | default 0 }}
   {{- if not (kindIs "invalid" $ttl) }}
