@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: example-app-gitops
+  name: example-app
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -16,7 +16,7 @@ spec:
         - ../../dev/example-app/values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: example-app-gitops
+    namespace: example-app
   syncPolicy:
     automated:
       prune: true
