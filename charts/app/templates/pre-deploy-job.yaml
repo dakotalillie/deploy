@@ -1,0 +1,72 @@
+{{- range $name, $svc := .Values.services }}
+{{- with $svc.preDeploy }}
+{{- if not .command }}
+{{- fail (printf "services.%s.preDeploy.command is required when preDeploy is set" $name) }}
+{{- end }}
+{{- $image := .image | default $svc.image | default $.Values.image }}
+{{- if not $image }}
+{{- fail (printf "services.%s.preDeploy needs an image (set services.%s.preDeploy.image, services.%s.image, or a top-level image default)" $name $name $name) }}
+{{- end }}
+{{- $fullname := include "app.fullname" (dict "root" $ "name" $name) }}
+{{- /* Use generateName so every run gets a unique name. A retained failed Job then
+       never collides with the next attempt. Leave room for the API server's random
+       suffix (~6 chars) within the 63-char name limit. */}}
+{{- $jobPrefix := printf "%s-pre-deploy" $fullname | trunc 57 | trimSuffix "-" }}
+{{- /* Reuse the service's env by default; preDeploy.env takes precedence on conflicts. */}}
+{{- $env := merge (deepCopy (.env | default dict)) ($svc.env | default dict) }}
+{{- /* Bound how long a finished (esp. failed, since those are retained) Job lingers
+       before Kubernetes garbage-collects it. Defaults to 3 days; an explicit value is
+       honored (including 0), and an explicit null keeps failed Jobs indefinitely. */}}
+{{- $ttl := 259200 }}
+{{- if hasKey . "ttlSecondsAfterFinished" }}
+{{- $ttl = .ttlSecondsAfterFinished }}
+{{- end }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: {{ $jobPrefix }}-
+  labels:
+    {{- include "app.labels" (dict "root" $ "name" $name "image" $image) | nindent 4 }}
+  annotations:
+    # Run as an Argo CD PreSync hook: this Job runs and must finish successfully
+    # before the rest of the manifests are applied. If it fails, the sync is
+    # aborted and nothing new is rolled out.
+    argocd.argoproj.io/hook: PreSync
+    # Clean up the Job once it succeeds, but keep failed Jobs so their logs stay
+    # available for debugging. Paired with generateName above, each run gets a
+    # fresh name, so a retained failure never blocks the next attempt.
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: {{ .backoffLimit | default 0 }}
+  {{- if not (kindIs "invalid" $ttl) }}
+  ttlSecondsAfterFinished: {{ $ttl }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "app.selectorLabels" (dict "root" $ "name" $name) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-deploy
+          image: {{ $image | quote }}
+          command:
+            {{- toYaml .command | nindent 12 }}
+          {{- with .args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $env }}
+          env:
+            {{- range $key, $value := . }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- with (.resources | default $svc.resources) }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
+{{- end }}
